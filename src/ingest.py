@@ -2,12 +2,16 @@ import logging
 from pathlib import Path
 
 from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders.pdf import PyPDFLoader
 
-from src.config import get_database_url, get_document_table_name, get_pdf_path, get_openai_embedding_model
+from src.config import (
+    get_database_url,
+    get_document_table_name,
+    get_pdf_path,
+)
+from src.simple_embeddings import SentenceTransformerEmbeddings
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
@@ -33,8 +37,8 @@ def split_documents(documents: list[Document]) -> list[Document]:
     return split_docs
 
 
-def create_vector_store(collection_name: str, connection: str, embedding_model: str) -> PGVector:
-    embeddings = OpenAIEmbeddings(model=embedding_model)
+def create_vector_store(collection_name: str, connection: str) -> PGVector:
+    embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
     store = PGVector(
         connection_string=connection,
         embedding_function=embeddings,
@@ -50,7 +54,6 @@ def ingest_pdf():
     pdf_path = get_pdf_path()
     collection_name = get_document_table_name()
     database_url = get_database_url()
-    embedding_model = get_openai_embedding_model()
 
     path = Path(pdf_path)
     if not path.exists():
@@ -61,10 +64,9 @@ def ingest_pdf():
     store = create_vector_store(
         collection_name=collection_name,
         connection=database_url,
-        embedding_model=embedding_model,
     )
     ids = [f'doc-{index+1}' for index in range(len(split_docs))]
-    logging.info('Armazenando %d chunks no banco de dados %s', len(split_docs), database_url)
+    logging.info('Armazenando %d chunks no banco de dados', len(split_docs))
     store.add_documents(documents=split_docs, ids=ids)
     logging.info('Ingestão concluída')
 

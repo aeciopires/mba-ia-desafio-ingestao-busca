@@ -2,8 +2,8 @@ import logging
 import os
 from typing import List, Optional
 
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import GoogleGenerativeAI
 from langchain_community.vectorstores.pgvector import PGVector
 
 from src.config import (
@@ -12,11 +12,10 @@ from src.config import (
     get_llm_provider,
     get_openai_api_key,
     get_google_api_key,
-    get_openai_embedding_model,
-    get_google_embedding_model,
     get_openai_llm_model,
     get_google_llm_model,
 )
+from src.simple_embeddings import SentenceTransformerEmbeddings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -66,9 +65,7 @@ def _ensure_api_key(provider: str) -> None:
 
 
 def _get_embeddings(provider: str):
-    if provider == "openai":
-        return OpenAIEmbeddings(model=get_openai_embedding_model())
-    return GoogleGenerativeAIEmbeddings(model=get_google_embedding_model())
+    return SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
 
 
 def _get_llm(provider: str):
@@ -124,12 +121,15 @@ def search_prompt(question: Optional[str] = None) -> str:
     llm = _get_llm(provider)
 
     try:
-        # both ChatOpenAI and GoogleGenerativeAI expose predict(text)
-        answer = llm.predict(prompt)
-    except Exception:
-        # fallback to predict_messages if available
-        answer = llm.predict_messages([prompt])
+        # Use invoke with message format for ChatOpenAI and GoogleGenerativeAI
+        from langchain_core.messages import HumanMessage
+        answer = llm.invoke([HumanMessage(content=prompt)])
+        if hasattr(answer, 'content'):
+            answer = answer.content
+    except Exception as e:
+        logging.error("Erro ao invocar LLM: %s", e)
+        return NO_INFO_RESPONSE
 
     if not answer:
         return NO_INFO_RESPONSE
-    return answer.strip()
+    return str(answer).strip()

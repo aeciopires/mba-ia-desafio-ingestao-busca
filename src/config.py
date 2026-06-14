@@ -11,11 +11,11 @@ ROOT = Path(__file__).resolve().parent.parent
 OPENAI_YAML_PATH = ROOT / "openai.yaml"
 GEMINI_YAML_PATH = ROOT / "gemini.yaml"
 
-DEFAULT_DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/rag"
+DEFAULT_DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5433/rag"
 DEFAULT_PDF_PATH = ROOT / "document.pdf"
 DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 DEFAULT_OPENAI_LLM_MODEL = "gpt-5-nano"
-DEFAULT_GOOGLE_EMBEDDING_MODEL = "models/embedding-001"
+DEFAULT_GOOGLE_EMBEDDING_MODEL = "models/text-embedding-004"
 DEFAULT_GOOGLE_LLM_MODEL = "gemini-3.1-flash-lite-preview"
 DEFAULT_DOCUMENT_TABLE = "documents"
 
@@ -93,4 +93,4 @@ def get_document_table_name() -> str:
 
 
 def get_llm_provider() -> str:
-    return os.getenv("LLM_PROVIDER", "openai").strip().lower()
+    return os.getenv("LLM_PROVIDER", "google").strip().lower()
