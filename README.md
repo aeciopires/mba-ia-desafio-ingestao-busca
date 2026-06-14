@@ -162,6 +162,9 @@ Chat interativo:
 
 ```bash
 python src/chat.py
+# PERGUNTA: Qual o faturamento da empresa "Pacto IA LTDA" em 2013?
+# RESPOSTA: O faturamento da "Pacto IA LTDA" é de R$ 1.206.483.117,54.
+
 # PERGUNTA: O que é a empresa?
 # RESPOSTA: [Contexto-based answer]
 # PERGUNTA: sair
