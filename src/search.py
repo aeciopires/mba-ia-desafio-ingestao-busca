@@ -1,3 +1,25 @@
+import logging
+import os
+from typing import List, Optional
+
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores.pgvector import PGVector
+
+from src.config import (
+    get_database_url,
+    get_document_table_name,
+    get_llm_provider,
+    get_openai_api_key,
+    get_google_api_key,
+    get_openai_embedding_model,
+    get_google_embedding_model,
+    get_openai_llm_model,
+    get_google_llm_model,
+)
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
 PROMPT_TEMPLATE = """
 CONTEXTO:
 {contexto}
@@ -25,5 +47,89 @@ PERGUNTA DO USUÁRIO:
 RESPONDA A "PERGUNTA DO USUÁRIO"
 """
 
-def search_prompt(question=None):
-    pass
+NO_INFO_RESPONSE = "Não tenho informações necessárias para responder sua pergunta."
+
+
+def _ensure_api_key(provider: str) -> None:
+    if provider == "openai":
+        key = get_openai_api_key()
+        if not key:
+            raise EnvironmentError("OPENAI_API_KEY não encontrado. Configure openai.yaml ou variável de ambiente.")
+        os.environ.setdefault("OPENAI_API_KEY", key)
+    elif provider == "google":
+        key = get_google_api_key()
+        if not key:
+            raise EnvironmentError("GOOGLE_API_KEY não encontrado. Configure gemini.yaml ou variável de ambiente.")
+        os.environ.setdefault("GOOGLE_API_KEY", key)
+    else:
+        raise ValueError("LLM_PROVIDER inválido")
+
+
+def _get_embeddings(provider: str):
+    if provider == "openai":
+        return OpenAIEmbeddings(model=get_openai_embedding_model())
+    return GoogleGenerativeAIEmbeddings(model=get_google_embedding_model())
+
+
+def _get_llm(provider: str):
+    if provider == "openai":
+        return ChatOpenAI(model_name=get_openai_llm_model())
+    return GoogleGenerativeAI(model=get_google_llm_model())
+
+
+def _load_vector_store(provider: str) -> PGVector:
+    embeddings = _get_embeddings(provider)
+    db_url = get_database_url()
+    collection = get_document_table_name()
+    store = PGVector(
+        connection_string=db_url,
+        embedding_function=embeddings,
+        collection_name=collection,
+        use_jsonb=True,
+        create_extension=False,
+    )
+    return store
+
+
+def _build_context(results: List[tuple]) -> str:
+    parts: List[str] = []
+    for doc, score in results:
+        src = doc.metadata.get("source", "document")
+        page = doc.metadata.get("page") or doc.metadata.get("page_number")
+        header = f"Fonte: {src}"
+        if page is not None:
+            header += f" / página {page}"
+        parts.append(f"{header}\n{doc.page_content.strip()}")
+    return "\n\n".join(parts).strip()
+
+
+def search_prompt(question: Optional[str] = None) -> str:
+    if not question or not question.strip():
+        raise ValueError("Pergunta vazia")
+
+    provider = get_llm_provider()
+    _ensure_api_key(provider)
+
+    store = _load_vector_store(provider)
+    logging.info("Executando busca vetorial k=10")
+    results = store.similarity_search_with_score(question, k=10)
+    if not results:
+        return NO_INFO_RESPONSE
+
+    context = _build_context(results)
+    if not context:
+        return NO_INFO_RESPONSE
+
+    prompt = PROMPT_TEMPLATE.format(contexto=context, pergunta=question)
+    llm = _get_llm(provider)
+
+    try:
+        # both ChatOpenAI and GoogleGenerativeAI expose predict(text)
+        answer = llm.predict(prompt)
+    except Exception:
+        # fallback to predict_messages if available
+        answer = llm.predict_messages([prompt])
+
+    if not answer:
+        return NO_INFO_RESPONSE
+    return answer.strip()
