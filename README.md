@@ -31,6 +31,7 @@
     - [search\_prompt(question: str) → str](#search_promptquestion-str--str)
     - [ingest\_pdf() → None](#ingest_pdf--none)
     - [chat.py](#chatpy)
+  - [Developer](#developer)
   - [License](#license)
 
 
@@ -413,6 +414,12 @@ Loads PDF, generates embeddings, stores in database
 ### chat.py
 
 Interactive CLI with "sair"/"exit" to quit
+
+## Developer
+
+Aecio dos Santos Pires
+- Linkedin: https://www.linkedin.com/in/aeciopires/
+- Site: http://aeciopires.com/
 
 ## License
 
