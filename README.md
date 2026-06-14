@@ -174,6 +174,7 @@ python src/validate.py
 ```
 
 Saída esperada:
+
 ```
 ✓ Python 3.10.12 ✓
 ✓ docker instalado ✓
@@ -218,12 +219,14 @@ python src/chat.py
 ## Troubleshooting
 
 ### "ModuleNotFoundError: No module named 'src'"
+
 ```bash
 export PYTHONPATH=$PWD
 python src/ingest.py
 ```
 
 ### "Connection refused" (Database)
+
 ```bash
 docker compose ps
 docker compose up -d
@@ -231,6 +234,7 @@ docker compose logs postgres
 ```
 
 ### "OPENAI_API_KEY not found"
+
 ```bash
 # Use environment variable
 export OPENAI_API_KEY=sk-proj-...
@@ -284,6 +288,7 @@ Workflow resumido
 
 
 ### Fase 1: Ingestão
+
 ```
 1. load_pdf(path) → PyPDFLoader
 2. split_documents(docs) → RecursiveCharacterTextSplitter
@@ -292,6 +297,7 @@ Workflow resumido
 ```
 
 ### Fase 2: Busca
+
 ```
 1. search_prompt(question)
 2. embed_query(question) → SentenceTransformer
@@ -321,6 +327,7 @@ mba-ia-desafio-ingestao-busca/
 ```
 
 ### PDF Ingestion (src/ingest.py)
+
 - **Loader**: PyPDFLoader → 34 páginas
 - **Splitter**: RecursiveCharacterTextSplitter (1000 chars, 150 overlap)
 - **Output**: 67 chunks semanticamente coerentes
@@ -328,6 +335,7 @@ mba-ia-desafio-ingestao-busca/
 - **Storage**: PGVector (PostgreSQL + pgvector extension)
 
 ### Vector Search (src/search.py)
+
 - **Query Embedding**: SentenceTransformer (same model as storage)
 - **Vector Search**: `similarity_search_with_score(k=10)` via pgvector
 - **Context Building**: Format top-10 chunks with source + page
@@ -335,6 +343,7 @@ mba-ia-desafio-ingestao-busca/
 - **Prompt Template**: CONTEXTO + REGRAS + EXEMPLOS + PERGUNTA
 
 ### Interactive Chat (src/chat.py)
+
 ```python
 while True:
     question = input("PERGUNTA: ")
@@ -359,13 +368,13 @@ while True:
 
 ## Key Features
 
-✅ **Offline Embeddings**: No API calls, no quota limits  
-✅ **Vector Search**: Semantic similarity via pgvector  
-✅ **Flexible LLM**: Switch between OpenAI/Google at runtime  
-✅ **Zero Hallucination**: Responses only from ingested context  
-✅ **Validation**: Pre-flight checks for all requirements  
-✅ **Docker Support**: Fully containerized database  
-✅ **CLI Interface**: Interactive chat for end users  
+- **Offline Embeddings**: No API calls, no quota limits  
+- **Vector Search**: Semantic similarity via pgvector  
+- **Flexible LLM**: Switch between OpenAI/Google at runtime  
+- **Zero Hallucination**: Responses only from ingested context  
+- **Validation**: Pre-flight checks for all requirements  
+- **Docker Support**: Fully containerized database  
+- **CLI Interface**: Interactive chat for end users  
 
 ## Performance Metrics
 
@@ -391,12 +400,15 @@ while True:
 ## API Contracts
 
 ### search_prompt(question: str) → str
+
 Returns context-based answer or fallback message
 
 ### ingest_pdf() → None
+
 Loads PDF, generates embeddings, stores in database
 
 ### chat.py
+
 Interactive CLI with "sair"/"exit" to quit
 
 ## License
