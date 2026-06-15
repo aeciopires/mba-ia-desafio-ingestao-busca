@@ -368,7 +368,7 @@ while True:
 | **LLM (Primary)** | GoogleGenerativeAI | - |
 | **LLM (Secondary)** | ChatOpenAI | - |
 | **PDF Parser** | PyPDF | 6.0.0 |
-| **Python** | 3.10+ | - |
+| **Python** | Program Language | 3.10+ |
 
 ## Key Features
 
